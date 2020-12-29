@@ -30,6 +30,7 @@ namespace ConsumerClient
 
                     EventingBasicConsumer consumer = new EventingBasicConsumer(channel);
 
+
                     //接收到消息事件
                     consumer.Received += (ch, ea) =>
                     {
