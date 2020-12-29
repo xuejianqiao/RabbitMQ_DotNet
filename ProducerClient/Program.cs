@@ -1,5 +1,7 @@
 ﻿using RabbitMQ.Client;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 
 namespace ProducerClient
@@ -29,10 +31,13 @@ namespace ProducerClient
 
                     //定义交换机的类型
                     channel.ExchangeDeclare(ExchangeName, ExchangeType.Direct, false, autoDelete:true);
-                 
 
+                    //var argss = new Dictionary<string,object>
+                    //{
+                    //   {"x-message-ttl",6000}
+                    //};
                     //定义消息队列
-                    channel.QueueDeclare(queueName, durable:false, exclusive:false,autoDelete:false);
+                    channel.QueueDeclare(queueName, durable:false, exclusive:false,autoDelete:false/*, arguments: argss*/);
 
                     //channel.QueueDeclare(queueName2, durable: false, exclusive: false, autoDelete: false);
 
@@ -43,15 +48,15 @@ namespace ProducerClient
 
                     Console.WriteLine($"\n RabbitMQ连接成功，\n\n请输入消息，输入exit退出！");
 
-                    //var properties = channel.CreateBasicProperties();
+                    var properties = channel.CreateBasicProperties();
                     //properties.Persistent = true;
+                    properties.DeliveryMode = 2;
+                    properties.Expiration = "6000";
 
                     string input;
                     do
                     {
                         input = Console.ReadLine();
-
-
 
                         var sendBytes = Encoding.UTF8.GetBytes(input);
                         //发布消息
