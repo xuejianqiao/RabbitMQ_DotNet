@@ -10,7 +10,7 @@ namespace ConsumerClient
 
 
         //public static string queueName2 = "kaolatesttwo";
-        public static string queueName2 = "kaolatest";
+        public static string queueName2 = "queue.dlx";
 
         static void Main(string[] args)
         {
