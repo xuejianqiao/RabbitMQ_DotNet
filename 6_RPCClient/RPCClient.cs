@@ -17,31 +17,40 @@ class RpcClient
     private readonly ConcurrentDictionary<string, TaskCompletionSource<string>> _callbackMapper =
                 new ConcurrentDictionary<string, TaskCompletionSource<string>>();
 
+    private readonly IBasicProperties props;
     public RpcClient()
     {
         var factory = new ConnectionFactory() { HostName = "localhost" };
 
         _connection = factory.CreateConnection();
         _channel = _connection.CreateModel();
+        props = _channel.CreateBasicProperties();
         _replyQueueName = _channel.QueueDeclare().QueueName;
+        props.ReplyTo = _replyQueueName;
         _consumer = new EventingBasicConsumer(_channel);
         _consumer.Received += (model, ea) =>
         {
-            if (!_callbackMapper.TryRemove(ea.BasicProperties.CorrelationId, out TaskCompletionSource<string> tcs))
-            {
-                return;
-            }
+            //if (!_callbackMapper.TryRemove(ea.BasicProperties.CorrelationId, out TaskCompletionSource<string> tcs))
+            //{
+            //    return;
+            //}
             var response = Encoding.UTF8.GetString(ea.Body.ToArray());
-            tcs.TrySetResult(response);
+            //tcs.TrySetResult(response);
+
+            Console.WriteLine(" [.] Got '{0}'", response);
         };
+
+        _channel.BasicConsume(
+          consumer: _consumer,
+          queue: _replyQueueName,
+          autoAck: true);
     }
 
-    public Task<string> CallAsync(string message, CancellationToken cancellationToken = default(CancellationToken))
+    public void CallAsync(string message, CancellationToken cancellationToken = default(CancellationToken))
     {
-        IBasicProperties props = _channel.CreateBasicProperties();
+       
         var correlationId = Guid.NewGuid().ToString();
         props.CorrelationId = correlationId;
-        props.ReplyTo = _replyQueueName;
         var messageBytes = Encoding.UTF8.GetBytes(message);
         var tcs = new TaskCompletionSource<string>();
         _callbackMapper.TryAdd(correlationId, tcs);
@@ -52,13 +61,8 @@ class RpcClient
             basicProperties: props,
             body: messageBytes);
 
-        _channel.BasicConsume(
-            consumer: _consumer,
-            queue: _replyQueueName,
-            autoAck: true);
-
-        cancellationToken.Register(() => _callbackMapper.TryRemove(correlationId, out var tmp));
-        return tcs.Task;
+        //cancellationToken.Register(() => _callbackMapper.TryRemove(correlationId, out var tmp));
+        //return tcs.Task;
     }
 
     public void Close()

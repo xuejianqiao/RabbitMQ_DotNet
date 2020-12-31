@@ -38,7 +38,11 @@ namespace DLX_DeadMessage
                     channel.QueueDeclare("queue.dlx", durable: true, exclusive: false, autoDelete: false);
                     channel.QueueBind("queue.dlx", "exchange.dlx", "dlxkey");
 
-                    //var properties = channel.CreateBasicProperties();
+                    var properties = channel.CreateBasicProperties();
+                    properties.Priority = 5;
+                    channel.BasicPublish("exchange.normal", "normalkey", properties, Encoding.UTF8.GetBytes("消息") );
+
+
                     //properties.DeliveryMode = 2;
                     //properties.Expiration = "6000";
 
@@ -57,6 +61,9 @@ namespace DLX_DeadMessage
 
                     channel.Close();
                     connection.Close();
+
+
+                   
 
                 }
             }
