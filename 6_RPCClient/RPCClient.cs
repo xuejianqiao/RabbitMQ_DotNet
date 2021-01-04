@@ -30,14 +30,12 @@ class RpcClient
         _consumer = new EventingBasicConsumer(_channel);
         _consumer.Received += (model, ea) =>
         {
-            //if (!_callbackMapper.TryRemove(ea.BasicProperties.CorrelationId, out TaskCompletionSource<string> tcs))
-            //{
-            //    return;
-            //}
+            if (!_callbackMapper.TryRemove(ea.BasicProperties.CorrelationId, out TaskCompletionSource<string> tcs))
+            {
+                return;
+            }
             var response = Encoding.UTF8.GetString(ea.Body.ToArray());
-            //tcs.TrySetResult(response);
-
-            Console.WriteLine(" [.] Got '{0}'", response);
+            tcs.TrySetResult(response);
         };
 
         _channel.BasicConsume(
@@ -46,7 +44,7 @@ class RpcClient
           autoAck: true);
     }
 
-    public void CallAsync(string message, CancellationToken cancellationToken = default(CancellationToken))
+    public Task<string> CallAsync(string message, CancellationToken cancellationToken = default(CancellationToken))
     {
        
         var correlationId = Guid.NewGuid().ToString();
@@ -61,8 +59,8 @@ class RpcClient
             basicProperties: props,
             body: messageBytes);
 
-        //cancellationToken.Register(() => _callbackMapper.TryRemove(correlationId, out var tmp));
-        //return tcs.Task;
+        cancellationToken.Register(() => _callbackMapper.TryRemove(correlationId, out var tmp));
+        return tcs.Task;
     }
 
     public void Close()
